@@ -1,32 +1,27 @@
-# Build stage
-FROM golang:1.22.5 as base
 
-# Set the working directory
+
+# Use Golang base image for building
+FROM golang:1.22.5 AS base
+
+# Set working directory
 WORKDIR /app
 
-# Copy the Go module files
+# Copy go.mod and go.sum, then download dependencies
 COPY go.mod . 
-COPY go.sum . 
-
-# Install dependencies
 RUN go mod download
 
-# Copy the rest of the application
-COPY . . 
-
-# Build the Go application
+# Copy source files and build the app
+COPY . .
 RUN go build -o main .
 
-# Final stage: Distroless image
+# Final stage - Distroless image
 FROM gcr.io/distroless/base
 
-# Copy the binary and static files from the build stage
-COPY --from=base /app/main /app/main
-COPY --from=base /app/static /app/static
+# Copy the built app binary and static files from the build stage
+COPY --from=base /app/main /
+COPY --from=base /app/static /static
 
-# Expose the port the app will listen on
 EXPOSE 8080
 
-# Command to run the app
-CMD ["/app/main"]
-
+# Set entrypoint to the compiled binary
+ENTRYPOINT ["/main"]
